@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Lishe App (Chrome - Fast)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "chrome",
+            "args": [
+                "--web-port",
+                "5000",
+                "--web-renderer",
+                "html"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Lishe App (Chrome)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "chrome",
+            "args": [
+                "--web-port",
+                "5000"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Lishe App (Web)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "web-server",
+            "args": [
+                "--web-port",
+                "5000",
+                "--web-hostname",
+                "0.0.0.0"
+            ],
+            "program": "lib/main.dart"
+        }
+    ]
+}

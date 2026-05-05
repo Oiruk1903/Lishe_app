@@ -1,0 +1,67 @@
+{
+    "name": "Lishe AI",
+    "short_name": "Lishe",
+    "description": "Msaidizi wa Lishe anayetumia Akili Bandia kwa Watanzania",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#2E7D32",
+    "theme_color": "#2E7D32",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "sw-TZ",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshots/home.png",
+            "sizes": "1080x1920",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Ukurasa wa Nyumbani"
+        }
+    ],
+    "categories": [
+        "health",
+        "fitness",
+        "education"
+    ],
+    "shortcuts": [
+        {
+            "name": "Weka Mlo",
+            "short_name": "Mlo",
+            "description": "Weka mlo wako wa leo",
+            "url": "/meal-logging",
+            "icons": [
+                {
+                    "src": "icons/meal.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Msaidizi AI",
+            "short_name": "Saidia",
+            "description": "Ongea na msaidizi wa lishe",
+            "url": "/chat",
+            "icons": [
+                {
+                    "src": "icons/chat.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ]
+}

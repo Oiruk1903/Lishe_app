@@ -1,0 +1,98 @@
+name: lishe_app
+description: AI-Driven Lishe Nutrition App for Tanzania
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  
+  # Navigation
+  go_router: ^13.2.5
+  
+  # UI & Utilities
+  flutter_screenutil: ^5.9.3
+  google_fonts: ^6.3.3
+  
+  # Camera & AI (Web Compatible)
+  camera: ^0.10.5+9
+  camera_web: ^0.3.2+1
+  image_picker: ^1.0.7
+  image_picker_for_web: ^3.0.2
+
+  # Database & Storage
+  sqflite: ^2.4.2
+  shared_preferences: ^2.2.3
+  path_provider: ^2.1.5
+  
+  # Networking
+  dio: ^5.9.2
+  
+  # Charts & Visualization
+  fl_chart: ^0.66.2
+  
+  # Notifications
+  # flutter_local_notifications: ^15.1.3
+
+  # Utilities
+  equatable: ^2.0.5
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  logger: ^2.0.2+1
+  uuid: ^4.2.1
+  permission_handler: ^11.1.0
+  package_info_plus: ^5.0.1
+  intl: ^0.20.2
+
+  # Web-specific
+  url_launcher: ^6.2.2
+  
+  # Other UI
+  flutter_svg: ^2.2.4
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.0
+  
+  # Hooks
+  hooks_riverpod: ^2.6.1
+  hooks: ^1.0.2
+  
+  # Connectivity
+  connectivity_plus: ^5.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.4.0
+  freezed: ^2.4.5
+  json_serializable: ^6.7.1
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  # Assets section - ONLY existing directories/files
+  assets:
+    - assets/images/
+    # - assets/icons/  <- Commented out until you create this folder
+    - assets/models/
+  # Fonts section - REMOVED or COMMENTED until you add font files
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Poppins-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
