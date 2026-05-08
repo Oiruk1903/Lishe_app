@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/constants/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/lazy_loading_service.dart';
 import 'l10n/app_localizations.dart';
 import 'shared/provides.dart';
 
@@ -23,7 +24,37 @@ class _LisheAppState extends ConsumerState<LisheApp> {
   }
 
   Future<void> _initializeServices() async {
-    await NotificationService.initialize();
+    // Initialize services with timeout to prevent hanging
+    try {
+      // Initialize notification service in background
+      await NotificationService.initialize()
+          .timeout(const Duration(seconds: 2));
+      print('Notification service initialized');
+    } catch (e) {
+      print('Notification service initialization failed: $e');
+      // Continue without notifications if it fails
+    }
+
+    // Initialize other non-critical services in background
+    _initializeNonCriticalServices();
+  }
+
+  void _initializeNonCriticalServices() {
+    // Initialize non-critical services without blocking UI
+    Future.microtask(() async {
+      try {
+        // Initialize lazy loading service
+        final lazyLoadingService = LazyLoadingService();
+        lazyLoadingService.initializeDefaultLoaders();
+
+        // Start loading secondary features in background
+        await lazyLoadingService.loadSecondaryFeatures();
+
+        print('Non-critical services initialization completed');
+      } catch (e) {
+        print('Error in non-critical services: $e');
+      }
+    });
   }
 
   @override

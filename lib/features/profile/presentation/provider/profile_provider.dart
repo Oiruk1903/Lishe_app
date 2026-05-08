@@ -1,36 +1,43 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/timeout_utils.dart';
+import '../../../../core/utils/cache_utils.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
-// Profile provider
+// Profile provider with caching
 final profileProvider = FutureProvider<UserProfile?>((ref) async {
   // Only load when user is authenticated, not during initialization
   final authState = ref.watch(authNotifierProvider);
   if (authState.isLoading || authState.user == null) return null;
 
-  // Simplified: create UserProfile from User entity (no database in simplified setup)
   final user = authState.user!;
+  final cacheKey = 'profile_${user.id}';
 
-  return await TimeoutUtils.withTimeoutAndFallback<UserProfile?>(
-    Future.value(UserProfile(
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      cohort: user.cohort,
-      profileImage: null,
-      height: user.height,
-      targetWeight: user.targetWeight,
-      preferredLanguage: 'sw',
-      notificationSettings: {},
-      createdAt: user.createdAt,
-    )),
-    timeout: TimeoutUtils.databaseTimeout,
-    fallback: null,
-    operation: 'Load Profile',
+  return await ProviderCache.getOrFetch<UserProfile?>(
+    cacheKey,
+    () async {
+      return await TimeoutUtils.withTimeoutAndFallback<UserProfile?>(
+        Future.value(UserProfile(
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          cohort: user.cohort,
+          profileImage: null,
+          height: user.height,
+          targetWeight: user.targetWeight,
+          preferredLanguage: 'sw',
+          notificationSettings: {},
+          createdAt: user.createdAt,
+        )),
+        timeout: TimeoutUtils.databaseTimeout,
+        fallback: null,
+        operation: 'Load Profile',
+      );
+    },
+    ttl: ProviderCache.longTtl,
   );
 });
 
@@ -138,6 +145,9 @@ class ProfileFormNotifier extends StateNotifier<ProfileFormState> {
       );
 
       _ref.read(authNotifierProvider.notifier).updateUser(updatedUser);
+
+      // Invalidate cache and provider to refresh data
+      CacheUtils.invalidate('profile_${currentUser.id}');
       _ref.invalidate(profileProvider);
 
       state = state.copyWith(isLoading: false, isSuccess: true);

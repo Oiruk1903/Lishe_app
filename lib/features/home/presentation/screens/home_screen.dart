@@ -21,7 +21,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages;
@@ -39,10 +40,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final l10n = AppLocalizations.of(context);
-    final authState = ref.watch(authNotifierProvider);
-    final user = authState.user;
+    final user = ref.watch(authNotifierProvider.select((state) => state.user));
 
     return Scaffold(
       appBar: AppBar(

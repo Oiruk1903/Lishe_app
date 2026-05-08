@@ -12,6 +12,8 @@ class Routes {
 
   // Feature Routes
   static const String mealLogging = '/meal-logging';
+  static const String mealPlanner = '/meal-planner';
+  static const String progressTracker = '/progress-tracker';
   static const String weightProgress = '/weight-progress';
   static const String plateAnalysis = '/plate-analysis';
   static const String chat = '/chat';

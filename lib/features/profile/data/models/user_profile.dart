@@ -1,1 +1,1 @@
-// TODO Implement this library.
+export 'user_profile_model.dart';

@@ -22,7 +22,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -51,12 +52,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final l10n = AppLocalizations.of(context);
     final profileAsync = ref.watch(profileProvider);
-    final authState = ref.watch(authNotifierProvider);
-    final locale = ref.watch(localeProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final authState = ref.watch(authNotifierProvider.select((state) => state));
+    final locale = ref.watch(localeProvider.select((locale) => locale));
+    final themeMode = ref.watch(themeModeProvider.select((mode) => mode));
 
     return Scaffold(
       appBar: AppBar(

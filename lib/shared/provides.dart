@@ -10,9 +10,13 @@ final themeModeProvider =
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const String _themeKey = 'theme_mode';
+  static bool _isLoading = false;
 
   ThemeModeNotifier() : super(ThemeMode.system) {
-    _loadSavedTheme();
+    if (!_isLoading) {
+      _isLoading = true;
+      _loadSavedTheme();
+    }
   }
 
   Future<void> _loadSavedTheme() async {
@@ -24,6 +28,8 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
       }
     } catch (e) {
       // Keep default theme if loading fails
+    } finally {
+      _isLoading = false;
     }
   }
 
@@ -45,9 +51,13 @@ final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
 
 class LocaleNotifier extends StateNotifier<Locale> {
   static const String _localeKey = 'locale';
+  static bool _isLoading = false;
 
   LocaleNotifier() : super(const Locale('en')) {
-    _loadSavedLocale();
+    if (!_isLoading) {
+      _isLoading = true;
+      _loadSavedLocale();
+    }
   }
 
   Future<void> _loadSavedLocale() async {
@@ -64,6 +74,8 @@ class LocaleNotifier extends StateNotifier<Locale> {
       }
     } catch (e) {
       // Keep default locale if loading fails
+    } finally {
+      _isLoading = false;
     }
   }
 

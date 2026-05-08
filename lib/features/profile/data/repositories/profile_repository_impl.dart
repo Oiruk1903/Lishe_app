@@ -105,7 +105,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   }
 
-  @override
   Future<void> uploadProfileImage(String userId, String imagePath) async {
     await remoteDataSource.uploadProfileImage(imagePath);
     // Refresh profile after upload

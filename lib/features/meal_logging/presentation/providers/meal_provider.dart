@@ -1,20 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/timeout_utils.dart';
+import '../../../../core/utils/cache_utils.dart';
 import '../../domain/entities/food.dart';
 import '../../domain/entities/meal_entry.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/food_data.dart';
 
-// Providers for data
+// Providers for data with caching
 final foodItemsProvider =
     FutureProvider.family<List<Food>, String?>((ref, zone) async {
-  // Use FoodData directly - no complex use cases needed
-  return await TimeoutUtils.withTimeoutAndFallbackNonNull<List<Food>>(
-    Future.value(FoodData.getAllFoods()),
-    timeout: TimeoutUtils.databaseTimeout,
-    fallback: [],
-    operation: 'Load Food Items',
+  final cacheKey = 'food_items_${zone ?? 'all'}';
+
+  final result = await ProviderCache.getOrFetch<List<Food>>(
+    cacheKey,
+    () async {
+      return await TimeoutUtils.withTimeoutAndFallbackNonNull<List<Food>>(
+        Future.value(FoodData.getAllFoods()),
+        timeout: TimeoutUtils.databaseTimeout,
+        fallback: [],
+        operation: 'Load Food Items',
+      );
+    },
+    ttl: ProviderCache.longTtl,
   );
+  return result ?? [];
 });
 
 final todayMealsProvider = FutureProvider<List<MealEntry>>((ref) async {
@@ -22,13 +31,24 @@ final todayMealsProvider = FutureProvider<List<MealEntry>>((ref) async {
   final authState = ref.watch(authNotifierProvider);
   if (authState.isLoading || authState.user == null) return [];
 
-  // Simplified: return empty list for now (no database in simplified setup)
-  return await TimeoutUtils.withTimeoutAndFallbackNonNull<List<MealEntry>>(
-    Future.value([]),
-    timeout: TimeoutUtils.databaseTimeout,
-    fallback: [],
-    operation: 'Load Today Meals',
+  final user = authState.user!;
+  final cacheKey =
+      'meals_${user.id}_${DateTime.now().year}_${DateTime.now().month}_${DateTime.now().day}';
+
+  final result = await ProviderCache.getOrFetch<List<MealEntry>>(
+    cacheKey,
+    () async {
+      // Simplified: return empty list for now (no database in simplified setup)
+      return await TimeoutUtils.withTimeoutAndFallbackNonNull<List<MealEntry>>(
+        Future.value([]),
+        timeout: TimeoutUtils.databaseTimeout,
+        fallback: [],
+        operation: 'Load Today Meals',
+      );
+    },
+    ttl: ProviderCache.shortTtl,
   );
+  return result ?? [];
 });
 
 final dailyNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
@@ -37,13 +57,25 @@ final dailyNutritionProvider = FutureProvider<Map<String, double>>((ref) async {
   if (authState.isLoading || authState.user == null)
     return {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0};
 
-  // Simplified: return default nutrition values (no database in simplified setup)
-  return await TimeoutUtils.withTimeoutAndFallbackNonNull<Map<String, double>>(
-    Future.value({'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}),
-    timeout: TimeoutUtils.databaseTimeout,
-    fallback: {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0},
-    operation: 'Calculate Daily Nutrition',
+  final user = authState.user!;
+  final cacheKey =
+      'nutrition_${user.id}_${DateTime.now().year}_${DateTime.now().month}_${DateTime.now().day}';
+
+  final result = await ProviderCache.getOrFetch<Map<String, double>>(
+    cacheKey,
+    () async {
+      // Simplified: return default nutrition values (no database in simplified setup)
+      return await TimeoutUtils.withTimeoutAndFallbackNonNull<
+          Map<String, double>>(
+        Future.value({'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}),
+        timeout: TimeoutUtils.databaseTimeout,
+        fallback: {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0},
+        operation: 'Calculate Daily Nutrition',
+      );
+    },
+    ttl: ProviderCache.shortTtl,
   );
+  return result ?? {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0};
 });
 
 // State for meal logging form
@@ -139,7 +171,15 @@ class MealLoggingNotifier extends StateNotifier<MealLoggingState> {
 
       state = state.copyWith(isSubmitting: false, success: true);
 
-      // Invalidate related providers
+      // Invalidate cache and providers to refresh data
+      final today = DateTime.now();
+      final cacheKeyToday =
+          'meals_${userId}_${today.year}_${today.month}_${today.day}';
+      final cacheKeyNutrition =
+          'nutrition_${userId}_${today.year}_${today.month}_${today.day}';
+
+      CacheUtils.invalidate(cacheKeyToday);
+      CacheUtils.invalidate(cacheKeyNutrition);
       _ref.invalidate(todayMealsProvider);
       _ref.invalidate(dailyNutritionProvider);
 

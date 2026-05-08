@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/services/local_storage_service.dart';
+import '../core/router/app_router.dart';
 
 // Local Storage Service Provider
 final localStorageServiceProvider =
@@ -21,6 +22,6 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) {
 });
 
 // App Router Provider
-final appRouterProvider = FutureProvider((ref) {
-  throw UnimplementedError('AppRouter initialization required');
+final appRouterProvider = Provider((ref) {
+  return AppRouter();
 });

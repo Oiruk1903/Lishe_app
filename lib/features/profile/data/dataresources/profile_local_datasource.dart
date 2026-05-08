@@ -57,8 +57,9 @@ class ProfileLocalDataSourceImpl implements ProfileLocalDataSource {
         DatabaseConstants.columnProfileImage: profile.profileImage,
         DatabaseConstants.columnHeight: profile.height,
         DatabaseConstants.columnTargetWeight: profile.targetWeight,
-        'preferred_language': profile.preferredLanguage,
-        'notification_settings': profile.notificationSettings,
+        DatabaseConstants.columnPreferredLanguage: profile.preferredLanguage,
+        DatabaseConstants.columnNotificationSettings:
+            profile.notificationSettings,
         DatabaseConstants.columnUpdatedAt: DateTime.now().toIso8601String(),
       },
       where: '${DatabaseConstants.columnId} = ?',
@@ -81,7 +82,7 @@ class ProfileLocalDataSourceImpl implements ProfileLocalDataSource {
     final db = await _dbHelper.database;
     await db.update(
       DatabaseConstants.tableUsers,
-      {'preferred_language': language},
+      {DatabaseConstants.columnPreferredLanguage: language},
       where: '${DatabaseConstants.columnId} = ?',
       whereArgs: [userId],
     );
@@ -93,7 +94,7 @@ class ProfileLocalDataSourceImpl implements ProfileLocalDataSource {
     final db = await _dbHelper.database;
     await db.update(
       DatabaseConstants.tableUsers,
-      {'notification_settings': settings},
+      {DatabaseConstants.columnNotificationSettings: settings},
       where: '${DatabaseConstants.columnId} = ?',
       whereArgs: [userId],
     );

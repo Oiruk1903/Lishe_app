@@ -55,6 +55,7 @@ class DatabaseHelper {
         ${DatabaseConstants.columnHeight} REAL,
         ${DatabaseConstants.columnTargetWeight} REAL,
         ${DatabaseConstants.columnPreferredLanguage} TEXT DEFAULT 'sw',
+        ${DatabaseConstants.columnNotificationSettings} TEXT DEFAULT '{}',
         ${DatabaseConstants.columnCreatedAt} TEXT NOT NULL,
         ${DatabaseConstants.columnUpdatedAt} TEXT
       )

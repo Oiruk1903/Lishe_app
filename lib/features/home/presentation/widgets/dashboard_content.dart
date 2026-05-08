@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lishe_app/features/auth/domain/entities/user.dart' show User;
 import 'package:lishe_app/features/meal_logging/domain/entities/meal_entry.dart';
 import 'package:lishe_app/features/meal_logging/presentation/widgets/meal_card.dart'
     show foodByIdProvider;
@@ -15,6 +14,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../meal_logging/presentation/providers/meal_provider.dart';
 import '../../../weight_tracking/presentation/providers/weight_provider.dart';
+import 'widgets/welcome_card.dart';
+import 'widgets/quick_actions.dart';
 
 class DashboardContent extends ConsumerWidget {
   const DashboardContent({super.key});
@@ -22,8 +23,7 @@ class DashboardContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final authState = ref.watch(authNotifierProvider);
-    final user = authState.user;
+    final user = ref.watch(authNotifierProvider.select((state) => state.user));
     final nutritionAsync = ref.watch(dailyNutritionProvider);
     final bmiAsync = ref.watch(bmiProvider);
     final weightEntriesAsync = ref.watch(weightEntriesProvider);
@@ -34,11 +34,11 @@ class DashboardContent extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Welcome Card
-          _buildWelcomeCard(context, user),
+          WelcomeCard(user: user),
           SizedBox(height: 20.h),
 
           // Quick Actions
-          _buildQuickActions(context),
+          const QuickActions(),
           SizedBox(height: 20.h),
 
           // Nutrition Summary
@@ -61,133 +61,6 @@ class DashboardContent extends ConsumerWidget {
           _buildRecentMeals(context, ref),
         ],
       ),
-    );
-  }
-
-  Widget _buildWelcomeCard(BuildContext context, User? user) {
-    return Container(
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primaryLight,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [AppColors.cardShadow],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Habari, ${user?.fullName.split(' ').first ?? 'Mpendwa'}!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              if (user?.cohort != null)
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text(
-                    _getCohortDisplayName(user!.cohort!),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'Je, umekula leo? Weka milo yako ili kufuatilia lishe bora.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14.sp,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to meal logging
-              context.push(Routes.mealLogging);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              padding: EdgeInsets.symmetric(
-                horizontal: 20.w,
-                vertical: 12.h,
-              ),
-            ),
-            child: const Text('Weka Mlo'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Vitendo vya Haraka',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        SizedBox(height: 12.h),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.camera_alt,
-                label: 'Changanua\nMlo',
-                color: AppColors.info,
-                onTap: () {
-                  context.push(Routes.plateAnalysis);
-                },
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.chat,
-                label: 'Muulize\nMsaidizi',
-                color: AppColors.secondary,
-                onTap: () {
-                  context.push(Routes.chat);
-                },
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.favorite,
-                label: 'Afya\nBora',
-                color: AppColors.success,
-                onTap: () {},
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -560,79 +433,11 @@ class DashboardContent extends ConsumerWidget {
     );
   }
 
-  String _getCohortDisplayName(String cohortId) {
-    switch (cohortId) {
-      case 'mothers_children':
-        return 'Mama na Mtoto';
-      case 'adolescents':
-        return 'Vijana';
-      case 'ncd':
-        return 'NCD';
-      case 'malnutrition':
-        return 'Utapiamlo';
-      case 'school_students':
-        return 'Mwanafunzi';
-      default:
-        return 'Mtu Mzima';
-    }
-  }
-
   String _getBMICategory(double bmi) {
     if (bmi < 18.5) return 'Upungufu';
     if (bmi < 25) return 'Kawaida';
     if (bmi < 30) return 'Kupita Kiasi';
     return 'Unene';
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-        child: Padding(
-          padding: EdgeInsets.all(12.w),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(10.w),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24.sp),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
