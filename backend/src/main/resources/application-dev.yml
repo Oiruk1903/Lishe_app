@@ -1,0 +1,57 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lisheapp
+    username: postgres
+    password: admin123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  ai:
+    # --- Google AI Studio (default, api-key based) ---
+    # Requires: GEMINI_API_KEY, SPRING_AI_MODEL_CHAT=openai (default)
+    openai:
+      api-key: ${GEMINI_API_KEY:dummy}
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        options:
+          model: ${GEMINI_MODEL:gemini-1.5-flash-latest}
+          max-tokens: 512
+          temperature: 0.7
+    # --- Vertex AI Gemini (enterprise, GCP credentials) ---
+    # Requires: SPRING_AI_MODEL_CHAT=vertexai, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GOOGLE_CLOUD_PROJECT:}
+          location: ${GOOGLE_CLOUD_LOCATION:us-central1}
+          chat:
+            options:
+              model: ${GEMINI_MODEL:gemini-1.5-flash}
+
+jwt:
+  secret: ${JWT_SECRET:bGlzaGUtZGV2LXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50LW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXVzZQ==}
+clickSend-username: y4clab@gmail.com
+clickSend-apiKey: EBB1979A-4A71-CA68-E5DE-0ECA57086FB6
+server:
+  error:
+    include-message: always
+logging:
+  level:
+    root: info
+report:
+  export:
+    dir: ${REPORT_EXPORT_DIR:${java.io.tmpdir}/lishe-exports}

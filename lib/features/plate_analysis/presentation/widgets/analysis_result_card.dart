@@ -1,39 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/plate_analysis_result.dart';
+import '../../../../core/network/ai_remote_datasource.dart';
 
 class AnalysisResultCard extends StatelessWidget {
-  final PlateAnalysisResult result;
+  final PlateAnalysisModel result;
 
-  const AnalysisResultCard({
-    super.key,
-    required this.result,
-  });
+  const AnalysisResultCard({super.key, required this.result});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(20.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final hasMatches = result.matchedFoods.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Header ──────────────────────────────────────────────────────────
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
               children: [
                 Container(
                   padding: EdgeInsets.all(12.w),
                   decoration: BoxDecoration(
-                    color: result.isBalanced
+                    color: hasMatches
                         ? AppColors.success.withOpacity(0.1)
                         : AppColors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Icon(
-                    result.isBalanced ? Icons.check_circle : Icons.info_outline,
-                    color: result.isBalanced
-                        ? AppColors.success
-                        : AppColors.warning,
+                    hasMatches ? Icons.check_circle : Icons.info_outline,
+                    color: hasMatches ? AppColors.success : AppColors.warning,
                     size: 28.sp,
                   ),
                 ),
@@ -43,16 +41,16 @@ class AnalysisResultCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        result.isBalanced
-                            ? 'Sahani yenye Lishe Bora!'
-                            : 'Sahani Inahitaji Kuboreshwa',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        hasMatches
+                            ? 'Vyakula Vimegunduliwa!'
+                            : 'Hakuna Vyakula Vilivyolingana',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        'Kikundi Kikuu: ${result.predominantFoodGroup}',
+                        '${result.identifiedFoods.length} vyakula vilivyopatikana',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 14.sp,
+                          fontSize: 12.sp,
                         ),
                       ),
                     ],
@@ -60,113 +58,144 @@ class AnalysisResultCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 24.h),
-            Text(
-              'Vikundi vya Vyakula Vilivyogunduliwa',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            SizedBox(height: 16.h),
-            ...result.predictions.entries.map((entry) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          entry.key,
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '${(entry.value * 100).toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                            color: _getColorForValue(entry.value),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4.h),
-                    LinearProgressIndicator(
-                      value: entry.value,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        _getColorForValue(entry.value),
+          ),
+        ),
+
+        SizedBox(height: 12.h),
+
+        // ── Identified foods ─────────────────────────────────────────────────
+        if (result.identifiedFoods.isNotEmpty) ...[
+          Text('Vyakula Vilivyogunduliwa',
+              style: Theme.of(context).textTheme.titleSmall),
+          SizedBox(height: 8.h),
+          ...result.identifiedFoods.map((food) => Card(
+                margin: EdgeInsets.only(bottom: 8.h),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(Icons.restaurant, color: AppColors.primary),
+                  title: Text(food.nameSw.isNotEmpty ? food.nameSw : food.nameEn),
+                  subtitle: Text(food.nameEn),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${(food.confidence * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontSize: 13.sp),
                       ),
-                      borderRadius: BorderRadius.circular(4.r),
-                      minHeight: 8.h,
-                    ),
-                  ],
+                      Text(
+                        '~${food.estimatedGrams.toStringAsFixed(0)}g',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 11.sp),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            }).toList(),
-            SizedBox(height: 24.h),
-            Container(
+              )),
+          SizedBox(height: 12.h),
+        ],
+
+        // ── Nutrients ────────────────────────────────────────────────────────
+        if (hasMatches) ...[
+          Text('Lishe Iliyokokotolewa',
+              style: Theme.of(context).textTheme.titleSmall),
+          SizedBox(height: 8.h),
+          Card(
+            child: Padding(
               padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: AppColors.primary.withOpacity(0.1),
-                ),
+              child: Column(
+                children: [
+                  _nutrientRow(context, 'Kalori',
+                      '${result.nutrientSummary.totalKcal.toStringAsFixed(0)} kcal',
+                      AppColors.error),
+                  _nutrientRow(context, 'Protini',
+                      '${result.nutrientSummary.totalProtein.toStringAsFixed(1)} g',
+                      AppColors.success),
+                  _nutrientRow(context, 'Wanga',
+                      '${result.nutrientSummary.totalCarbs.toStringAsFixed(1)} g',
+                      AppColors.warning),
+                  _nutrientRow(context, 'Mafuta',
+                      '${result.nutrientSummary.totalFat.toStringAsFixed(1)} g',
+                      AppColors.primary),
+                ],
               ),
+            ),
+          ),
+          SizedBox(height: 12.h),
+        ],
+
+        // ── AI Explanation ───────────────────────────────────────────────────
+        if (result.aiExplanation.isNotEmpty) ...[
+          Card(
+            color: AppColors.primary.withOpacity(0.05),
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        color: AppColors.primary,
-                        size: 20.sp,
-                      ),
+                      Icon(Icons.auto_awesome,
+                          color: AppColors.primary, size: 18.sp),
                       SizedBox(width: 8.w),
-                      Text(
-                        'Mapendekezo',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          fontSize: 16.sp,
-                        ),
-                      ),
+                      Text('Ushauri wa AI',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                              fontSize: 14.sp)),
                     ],
                   ),
-                  SizedBox(height: 12.h),
-                  ...result.recommendations.map((rec) {
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 8.h),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('• ', style: TextStyle(fontSize: 14.sp)),
-                          Expanded(
-                            child: Text(
-                              rec,
-                              style: TextStyle(fontSize: 14.sp),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                  SizedBox(height: 8.h),
+                  Text(result.aiExplanation,
+                      style: TextStyle(fontSize: 13.sp, height: 1.5)),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
+
+        // ── Unmatched foods ──────────────────────────────────────────────────
+        if (result.unmatchedFoods.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          Text('Vyakula Visivyolingana',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(color: AppColors.textSecondary)),
+          SizedBox(height: 4.h),
+          Text(result.unmatchedFoods.join(', '),
+              style:
+                  TextStyle(color: AppColors.textSecondary, fontSize: 12.sp)),
+        ],
+      ],
     );
   }
 
-  Color _getColorForValue(double value) {
-    if (value >= 0.25) return AppColors.success;
-    if (value >= 0.15) return AppColors.warning;
-    return AppColors.error;
+  Widget _nutrientRow(
+      BuildContext context, String label, String value, Color color) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                  width: 8.w,
+                  height: 8.w,
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle)),
+              SizedBox(width: 8.w),
+              Text(label, style: TextStyle(fontSize: 13.sp)),
+            ],
+          ),
+          Text(value,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp)),
+        ],
+      ),
+    );
   }
 }

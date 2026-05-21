@@ -12,13 +12,17 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       fullName: json['fullName'] as String,
       email: json['email'] as String,
       phoneNumber: json['phoneNumber'] as String?,
-      dateOfBirth: DateTime.parse(json['dateOfBirth'] as String),
-      gender: json['gender'] as String,
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'] as String)
+          : DateTime(1990, 1, 1),
+      gender: (json['gender'] as String?) ?? '',
       cohort: json['cohort'] as String?,
       profileImage: json['profileImage'] as String?,
       height: (json['height'] as num?)?.toDouble(),
       targetWeight: (json['targetWeight'] as num?)?.toDouble(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),

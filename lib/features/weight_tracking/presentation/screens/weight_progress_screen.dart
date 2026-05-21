@@ -23,12 +23,14 @@ class WeightProgressScreen extends ConsumerStatefulWidget {
 
 class _WeightProgressScreenState extends ConsumerState<WeightProgressScreen> {
   final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
   final _noteController = TextEditingController();
   bool _showAddForm = false;
 
   @override
   void dispose() {
     _weightController.dispose();
+    _heightController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -205,7 +207,7 @@ class _WeightProgressScreenState extends ConsumerState<WeightProgressScreen> {
                               ],
                             );
                           }
-                          return BMIGauge(bmi: bmi);
+                          return BMIGauge(bmi: bmi.bmi);
                         },
                       ),
                     ],
@@ -241,9 +243,17 @@ class _WeightProgressScreenState extends ConsumerState<WeightProgressScreen> {
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
                 final weight = double.tryParse(value);
-                if (weight != null) {
-                  notifier.updateWeight(weight);
-                }
+                if (weight != null) notifier.updateWeight(weight);
+              },
+            ),
+            SizedBox(height: 12.h),
+            AppTextField(
+              label: 'Urefu (cm) — Si lazima ukishasainisha',
+              controller: _heightController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (value) {
+                notifier.updateHeight(double.tryParse(value));
               },
             ),
             SizedBox(height: 12.h),
@@ -270,6 +280,7 @@ class _WeightProgressScreenState extends ConsumerState<WeightProgressScreen> {
                       setState(() {
                         _showAddForm = false;
                         _weightController.clear();
+                        _heightController.clear();
                         _noteController.clear();
                       });
                     },
@@ -292,6 +303,7 @@ class _WeightProgressScreenState extends ConsumerState<WeightProgressScreen> {
                         setState(() {
                           _showAddForm = false;
                           _weightController.clear();
+                          _heightController.clear();
                           _noteController.clear();
                         });
                         notifier.reset();

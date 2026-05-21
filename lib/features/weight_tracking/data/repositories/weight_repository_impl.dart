@@ -1,45 +1,68 @@
-import 'package:uuid/uuid.dart';
 import '../../domain/repositories/weight_repository.dart';
 import '../../domain/entities/weight_entry.dart';
 import '../datasources/weight_local_datasource.dart';
+import '../datasources/weight_remote_datasource.dart';
 import '../models/weight_entry_model.dart';
+import '../models/bmi_model.dart';
 
 class WeightRepositoryImpl implements WeightRepository {
   final WeightLocalDataSource localDataSource;
+  final WeightRemoteDataSource remoteDataSource;
 
-  WeightRepositoryImpl(this.localDataSource);
+  WeightRepositoryImpl(this.localDataSource, this.remoteDataSource);
 
   @override
   Future<void> addWeightEntry({
     required String userId,
     required double weight,
+    double? heightCm,
     String? note,
   }) async {
-    final entry = WeightEntry(
-      id: const Uuid().v4(),
-      userId: userId,
-      weight: weight,
-      recordedAt: DateTime.now(),
-      note: note,
-    );
-    final model = WeightEntryModel.fromEntity(entry);
-    await localDataSource.saveEntry(model);
+    final model = await remoteDataSource.logWeight({
+      'weightKg': weight,
+      if (heightCm != null) 'heightCm': heightCm,
+      if (note != null) 'note': note,
+    });
+    final synced = model.copyWith(synced: true);
+    await localDataSource.saveEntry(synced);
   }
 
   @override
-  Future<List<WeightEntry>> getWeightHistory(String userId) async {
-    final models = await localDataSource.getEntries(userId);
-    return models.map((model) => model.toEntity()).toList();
+  Future<List<WeightEntry>> getWeightHistory(String userId, {int days = 30}) async {
+    try {
+      final models = await remoteDataSource.getHistory(days: days);
+      for (final m in models) {
+        await localDataSource.saveEntry(m.copyWith(synced: true));
+      }
+      return models.map((m) => m.toEntity()).toList();
+    } catch (_) {
+      final local = await localDataSource.getEntries(userId);
+      return local.map((m) => m.toEntity()).toList();
+    }
   }
 
   @override
   Future<WeightEntry?> getCurrentWeight(String userId) async {
-    final model = await localDataSource.getLatestEntry(userId);
-    return model?.toEntity();
+    try {
+      final model = await remoteDataSource.getLatest();
+      await localDataSource.saveEntry(model.copyWith(synced: true));
+      return model.toEntity();
+    } catch (_) {
+      final model = await localDataSource.getLatestEntry(userId);
+      return model?.toEntity();
+    }
   }
 
   @override
+  Future<BmiModel> getBmi() => remoteDataSource.getBmi();
+
+  @override
+  Future<Map<String, dynamic>> getTrends({int days = 30}) =>
+      remoteDataSource.getTrends(days: days);
+
+  @override
   Future<void> deleteEntry(String id) async {
+    await remoteDataSource.deleteEntry(id);
     await localDataSource.deleteEntry(id);
   }
 
@@ -60,7 +83,6 @@ class WeightRepositoryImpl implements WeightRepository {
 
   @override
   double getIdealWeight(double heightCm, String gender) {
-    // Devine formula
     if (gender == 'male') {
       return 50 + 2.3 * ((heightCm - 152.4) / 2.54);
     } else {
@@ -71,7 +93,7 @@ class WeightRepositoryImpl implements WeightRepository {
   @override
   DateTime calculateGoalDate(double currentWeight, double targetWeight) {
     final difference = (targetWeight - currentWeight).abs();
-    final weeks = difference / 0.5; // Safe rate: 0.5 kg per week
+    final weeks = difference / 0.5;
     return DateTime.now().add(Duration(days: (weeks * 7).round()));
   }
 }

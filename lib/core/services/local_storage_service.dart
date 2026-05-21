@@ -7,6 +7,7 @@ class LocalStorageService {
   final SharedPreferences _prefs;
 
   static const String _keyAuthToken = 'auth_token';
+  static const String _keyRefreshToken = 'refresh_token';
   static const String _keyCurrentUser = 'current_user';
 
   LocalStorageService(this._prefs);
@@ -17,6 +18,14 @@ class LocalStorageService {
 
   Future<String?> getAuthToken() async {
     return _prefs.getString(_keyAuthToken);
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    await _prefs.setString(_keyRefreshToken, token);
+  }
+
+  Future<String?> getRefreshToken() async {
+    return _prefs.getString(_keyRefreshToken);
   }
 
   Future<void> saveCurrentUser(User user) async {
@@ -39,23 +48,28 @@ class LocalStorageService {
     final userJson = _prefs.getString(_keyCurrentUser);
     if (userJson == null) return null;
 
-    final map = jsonDecode(userJson);
+    final map = jsonDecode(userJson) as Map<String, dynamic>;
     return User(
-      id: map['id'],
-      fullName: map['fullName'],
-      email: map['email'],
-      phoneNumber: map['phoneNumber'],
-      dateOfBirth: DateTime.parse(map['dateOfBirth']),
-      gender: map['gender'],
-      cohort: map['cohort'],
-      height: map['height']?.toDouble(),
-      targetWeight: map['targetWeight']?.toDouble(),
-      createdAt: DateTime.parse(map['createdAt']),
+      id: map['id'] as String,
+      fullName: map['fullName'] as String,
+      email: map['email'] as String,
+      phoneNumber: map['phoneNumber'] as String?,
+      dateOfBirth: map['dateOfBirth'] != null
+          ? DateTime.parse(map['dateOfBirth'] as String)
+          : DateTime(1990, 1, 1),
+      gender: (map['gender'] as String?) ?? '',
+      cohort: map['cohort'] as String?,
+      height: (map['height'] as num?)?.toDouble(),
+      targetWeight: (map['targetWeight'] as num?)?.toDouble(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 
   Future<void> clearAuthData() async {
     await _prefs.remove(_keyAuthToken);
+    await _prefs.remove(_keyRefreshToken);
     await _prefs.remove(_keyCurrentUser);
   }
 }

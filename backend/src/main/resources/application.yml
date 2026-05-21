@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: lishe-app
+  profiles:
+    active: dev
+  ai:
+    model:
+      # Set via env vars to select the Gemini backend:
+      #   google-genai (default) -> SPRING_AI_MODEL_CHAT=openai, GEMINI_API_KEY=<key>
+      #   spring-ai-gemini       -> SPRING_AI_MODEL_CHAT=vertexai, GOOGLE_CLOUD_PROJECT=<project>
+      chat: ${SPRING_AI_MODEL_CHAT:openai}
+      embedding: ${SPRING_AI_MODEL_EMBEDDING:none}
+      embedding.text: ${SPRING_AI_MODEL_EMBEDDING:none}

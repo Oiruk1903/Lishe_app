@@ -1,13 +1,18 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/services/tflite_service.dart';
-import '../../data/models/plate_analysis_result.dart';
+import '../../../../core/network/ai_remote_datasource.dart';
+import '../../../../core/network/api_client_provider.dart';
 
-final tfliteServiceProvider = Provider<TFLiteService>((ref) {
-  return TFLiteService();
+// ─── Provider ────────────────────────────────────────────────────────────────
+
+final plateAiDataSourceProvider = Provider<AiRemoteDataSource>((ref) {
+  return AiRemoteDataSourceImpl(ref.watch(dioClientProvider));
 });
 
+// ─── State ────────────────────────────────────────────────────────────────────
+
 class PlateAnalysisState {
-  final PlateAnalysisResult? result;
+  final PlateAnalysisModel? result;
   final bool isLoading;
   final String? errorMessage;
 
@@ -18,29 +23,30 @@ class PlateAnalysisState {
   });
 
   PlateAnalysisState copyWith({
-    PlateAnalysisResult? result,
+    PlateAnalysisModel? result,
     bool? isLoading,
     String? errorMessage,
-  }) {
-    return PlateAnalysisState(
-      result: result ?? this.result,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-    );
-  }
+  }) =>
+      PlateAnalysisState(
+        result: result ?? this.result,
+        isLoading: isLoading ?? this.isLoading,
+        errorMessage: errorMessage,
+      );
 }
 
-class PlateAnalysisNotifier extends StateNotifier<PlateAnalysisState> {
-  final TFLiteService _tfliteService;
+// ─── Notifier ─────────────────────────────────────────────────────────────────
 
-  PlateAnalysisNotifier(this._tfliteService)
-      : super(const PlateAnalysisState());
+class PlateAnalysisNotifier extends StateNotifier<PlateAnalysisState> {
+  final AiRemoteDataSource _remote;
+
+  PlateAnalysisNotifier(this._remote) : super(const PlateAnalysisState());
 
   Future<void> analyzeImage(dynamic imageFile) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final result = await _tfliteService.analyzeImage(imageFile);
+      final file = imageFile is File ? imageFile : File(imageFile.path as String);
+      final result = await _remote.analyzePlate(file);
       state = state.copyWith(result: result, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -50,13 +56,10 @@ class PlateAnalysisNotifier extends StateNotifier<PlateAnalysisState> {
     }
   }
 
-  void reset() {
-    state = const PlateAnalysisState();
-  }
+  void reset() => state = const PlateAnalysisState();
 }
 
 final plateAnalysisNotifierProvider =
     StateNotifierProvider<PlateAnalysisNotifier, PlateAnalysisState>((ref) {
-  final service = ref.watch(tfliteServiceProvider);
-  return PlateAnalysisNotifier(service);
+  return PlateAnalysisNotifier(ref.watch(plateAiDataSourceProvider));
 });

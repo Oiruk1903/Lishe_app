@@ -9,10 +9,12 @@ part of 'weight_entry_model.dart';
 _$WeightEntryModelImpl _$$WeightEntryModelImplFromJson(
         Map<String, dynamic> json) =>
     _$WeightEntryModelImpl(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      weight: (json['weight'] as num).toDouble(),
-      recordedAt: DateTime.parse(json['recordedAt'] as String),
+      id: json['id'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+      recordedAt: json['recordedAt'] != null
+          ? DateTime.parse(json['recordedAt'] as String)
+          : DateTime.now(),
       synced: json['synced'] as bool? ?? false,
       note: json['note'] as String?,
     );

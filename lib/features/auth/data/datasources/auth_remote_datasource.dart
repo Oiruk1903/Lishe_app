@@ -4,6 +4,7 @@ import '../../../../core/network/api_endpoints.dart';
 abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> register(Map<String, dynamic> data);
   Future<Map<String, dynamic>> login(String email, String password);
+  Future<Map<String, dynamic>> refreshToken(String refreshToken);
   Future<void> logout();
   Future<Map<String, dynamic>> getProfile();
   Future<void> updateProfile(Map<String, dynamic> data);
@@ -21,7 +22,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
     final response = await dio.post(ApiEndpoints.register, data: data);
-    return response.data;
+    return response.data['data'] as Map<String, dynamic>;
   }
 
   @override
@@ -30,7 +31,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       ApiEndpoints.login,
       data: {'email': email, 'password': password},
     );
-    return response.data;
+    return response.data['data'] as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+    final response = await dio.post(
+      ApiEndpoints.refresh,
+      data: {'refresh_token': refreshToken},
+    );
+    return response.data['data'] as Map<String, dynamic>;
   }
 
   @override
@@ -41,7 +51,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<Map<String, dynamic>> getProfile() async {
     final response = await dio.get(ApiEndpoints.profile);
-    return response.data;
+    return response.data['data'] as Map<String, dynamic>;
   }
 
   @override
@@ -71,7 +81,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       '${ApiEndpoints.forgotPassword}/verify',
       data: {'email': email, 'code': code},
     );
-    return response.data['valid'] as bool;
+    return response.data['data'] as bool;
   }
 
   @override

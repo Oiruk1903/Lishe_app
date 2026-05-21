@@ -1,9 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/network/ai_remote_datasource.dart';
+import '../../../../core/network/api_client_provider.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
-// Chat State
+// ─── Provider ────────────────────────────────────────────────────────────────
+
+final aiRemoteDataSourceProvider = Provider<AiRemoteDataSource>((ref) {
+  return AiRemoteDataSourceImpl(ref.watch(dioClientProvider));
+});
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
@@ -19,14 +28,15 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? isLoading,
     String? errorMessage,
-  }) {
-    return ChatState(
-      messages: messages ?? this.messages,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-    );
-  }
+  }) =>
+      ChatState(
+        messages: messages ?? this.messages,
+        isLoading: isLoading ?? this.isLoading,
+        errorMessage: errorMessage,
+      );
 }
+
+// ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class ChatNotifier extends StateNotifier<ChatState> {
   final Ref _ref;
@@ -36,77 +46,116 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void _loadWelcomeMessage() {
-    state = state.copyWith(
-      messages: [
-        ChatMessage(
-          id: const Uuid().v4(),
-          content:
-              'Habari! Mimi ni msaidizi wako wa lishe. Unaweza kuniuliza swali lolote kuhusu vyakula, lishe, au afya. Ninawezaje kukusaidia leo?',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      ],
-    );
+    state = state.copyWith(messages: [
+      ChatMessage(
+        id: const Uuid().v4(),
+        content:
+            'Habari! Mimi ni msaidizi wako wa lishe. Unaweza kuniuliza swali lolote kuhusu vyakula, lishe, au afya. Ninawezaje kukusaidia leo?',
+        isUser: false,
+        timestamp: DateTime.now(),
+      ),
+    ]);
   }
 
   Future<void> sendMessage(String content) async {
     if (content.trim().isEmpty) return;
 
     final authState = _ref.read(authNotifierProvider);
-    final user = authState.user;
-    if (user == null) {
+    if (authState.user == null) {
       state = state.copyWith(errorMessage: 'User not logged in');
       return;
     }
 
-    final userMessage = ChatMessage(
+    // Optimistic: show user message immediately with "sending" status
+    final userMsg = ChatMessage(
       id: const Uuid().v4(),
       content: content,
       isUser: true,
       timestamp: DateTime.now(),
+      status: MessageStatus.sending,
+    );
+    final typingMsg = ChatMessage(
+      id: 'typing',
+      content: '...',
+      isUser: false,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sending,
     );
 
     state = state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, userMsg, typingMsg],
       isLoading: true,
       errorMessage: null,
     );
 
-    // Simulate AI response
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final remote = _ref.read(aiRemoteDataSourceProvider);
+      final response = await remote.sendChat(content);
 
-    final botMessage = ChatMessage(
-      id: const Uuid().v4(),
-      content: _getMockResponse(content),
-      isUser: false,
-      timestamp: DateTime.now(),
-    );
+      final sentUserMsg = ChatMessage(
+        id: userMsg.id,
+        content: content,
+        isUser: true,
+        timestamp: userMsg.timestamp,
+        status: MessageStatus.sent,
+      );
+      final botMsg = ChatMessage(
+        id: const Uuid().v4(),
+        content: response.aiResponse,
+        isUser: false,
+        timestamp: DateTime.now(),
+        status: MessageStatus.sent,
+      );
 
-    state = state.copyWith(
-      messages: [...state.messages, botMessage],
-      isLoading: false,
-    );
-  }
+      // Replace optimistic messages with confirmed ones
+      final updated = state.messages
+          .where((m) => m.id != userMsg.id && m.id != 'typing')
+          .toList()
+        ..addAll([sentUserMsg, botMsg]);
 
-  String _getMockResponse(String userMessage) {
-    // Simple mock responses based on keywords
-    if (userMessage.toLowerCase().contains('ugali')) {
-      return 'Ugali ni chakula cha kiasili cha Tanzania kinachotengenezwa na unga wa mahindi. Ni chanzo cha wanga na kina kalori 150 kwa kila 100g.';
-    } else if (userMessage.toLowerCase().contains('lishe')) {
-      return 'Lishe ni muhimu kwa afya yako. Unapaswa kula chakula chenye lishe baki, pamoja na matunda na mboga.';
-    } else if (userMessage.toLowerCase().contains('maji')) {
-      return 'Ni muhimu kunywa maji mengi kila siku, angalau glasi 8. Maji husaidia kumwili mwili na kutoa sumu.';
-    } else {
-      return 'Asante kwa swali lako. Kwa ushauri wa kina zaidi kuhusu lishe, wasiliana na daktari wa lishe.';
+      state = state.copyWith(messages: updated, isLoading: false);
+
+      // Surface advisory if AI flagged a referral
+      if (response.referralFlagged && response.advisoryMessage != null) {
+        final advisoryMsg = ChatMessage(
+          id: const Uuid().v4(),
+          content: '⚕️ ${response.advisoryMessage}',
+          isUser: false,
+          timestamp: DateTime.now(),
+          status: MessageStatus.sent,
+        );
+        state = state.copyWith(
+            messages: [...state.messages, advisoryMsg]);
+      }
+    } catch (e) {
+      // Mark user message as error, remove typing indicator
+      final errorUserMsg = ChatMessage(
+        id: userMsg.id,
+        content: content,
+        isUser: true,
+        timestamp: userMsg.timestamp,
+        status: MessageStatus.error,
+      );
+      final withoutTyping = state.messages
+          .where((m) => m.id != userMsg.id && m.id != 'typing')
+          .toList()
+        ..add(errorUserMsg);
+
+      state = state.copyWith(
+        messages: withoutTyping,
+        isLoading: false,
+        errorMessage: 'Imeshindwa kupata jibu. Tafadhali angalia mtandao wako.',
+      );
     }
   }
 
-  void clearError() {
-    state = state.copyWith(errorMessage: null);
+  void clearError() => state = state.copyWith(errorMessage: null);
+
+  void reset() {
+    state = const ChatState();
+    _loadWelcomeMessage();
   }
 }
 
 final chatNotifierProvider =
-    StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  return ChatNotifier(ref);
-});
+    StateNotifierProvider<ChatNotifier, ChatState>((ref) => ChatNotifier(ref));

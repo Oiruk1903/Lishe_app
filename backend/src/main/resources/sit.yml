@@ -1,0 +1,42 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GOOGLE_CLOUD_PROJECT:}
+          location: ${GOOGLE_CLOUD_LOCATION:us-central1}
+          chat:
+            options:
+              model: ${GEMINI_MODEL:gemini-1.5-flash}
+clickSend-username: y4clab@gmail.com
+clickSend-apiKey: EBB1979A-4A71-CA68-E5DE-0ECA57086FB6
+server:
+  error:
+    include-message: always
+logging:
+  level:
+    root: info
+ai:
+  provider: ${AI_PROVIDER:python}
+  engine:
+    base-url: ${AI_ENGINE_BASE_URL}
+report:
+  export:
+    dir: ${REPORT_EXPORT_DIR:${java.io.tmpdir}/lishe-exports}
